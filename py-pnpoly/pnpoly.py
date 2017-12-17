@@ -1,33 +1,48 @@
+
+import json
 class PolygonGrid():
     DEFAULT_X = 50
     DEFAULT_Y = 50
-
+    #geoJson is just a dictionary
+    #geoJson isn't the file, it's when it's loaded in already
     def __init__(self, geojson, x=DEFAULT_X, y=DEFAULT_Y):
         self.x = x or self.DEFAULT_X
         self.y = y or self.DEFAULT_Y
-        self.polygons = self.extract_polygons(geojson)
+        gj = self.makeGeojson(geojson)
+        self.polygons = self.extract_polygons(gj)
         self.minx, self.miny, self.maxx, self.maxy = \
             self.get_minmax(self.polygons)
         self.xstep, self.ystep = self.get_step()
         self.grid = self.init_grid()
 
+    def makeGeojson(self, geojson):
+        g = json.load(open(geojson))
+        return g
+
     def init_grid(self):
-        grid = [[]*self.y for i in range(self.x)]
+        print(self.y)
+        print(self.x)
+        #grid = [[]*self.y for i in range(self.x)] 
+        grid = [[[] for x in range(self.x)] for y in range(self.y) ]
 
         for i, polygon in enumerate(self.polygons):
+            print("this thing" + str(i))
             for point in polygon:
-                x, y = ((point[1]-self.miny) / self.ystep,
-                        (point[0]-self.minx) / self.xstep)
+                x, y = (((point[1]-self.minx) / self.xstep)-1,
+                        ((point[0]-self.miny) / self.ystep)-1)
+                x = int(x)
+                y = int(y)
+
+                #print("point is " + str(point)+ "x is " + str(x) + " and " + "y is " + str(y))
 
                 grid[x][y].append(i)
-
         return grid
 
-    def extract_polygons(self, geojson):
-        return [polygon['geometry']['coordinates'][0]
+    def extract_polygons(self, geojson): #array of all the regions
+        return [polygon['geometry']['coordinates'][0] #list of all the coordinates
                 for polygon
-                in geojson['features']]
-
+                in geojson['features']] 
+                
     def get_minmax(self, polygons):
         minx, miny, maxx, maxy = float('inf'), float('inf'), 0.0, 0.0
 
@@ -46,28 +61,29 @@ class PolygonGrid():
                 (self.maxy-self.miny) / float(self.y))
 
     def point_to_grid_index(self, x, y):
-        return ((x - self.minx) / self.xstep,
-                (y - self.miny) / self.ystep)
+        return (((x - self.minx) / self.xstep)-1,
+                ((y - self.miny) / self.ystep)-1)
 
     def get_canidate_polygons(self, x, y):
-        gridx, gridy = self.pointToGridIndex(x, y)
+        gridx, gridy = self.point_to_grid_index(x, y)
         candidates = self.grid_regions[gridx][gridy]
-        return(candidates)
-
-
+        return(candidates) #listOfIntegers
+        #candidate polygons are indexes, grabbing from self.grid. 
+        
+"""
 def pnpoly(geojson, points):
     p_grid = PolygonGrid(geojson)
-    occurences = [0 * len(p_grid.polygons)]
+    occurences = [0 * len(p_grid.polygons)] 
 
     for point in points:
         x, y = point[1], point[0]
         canidate_polygons = p_grid.get_canidate_polygons(x, y)
-
+        #run pn poly on that set of coordinates and the polygons
         for polygon_index in canidate_polygons:
-            polygon = p_grid.polygons[polygon_index]
-            # do pnpoly
+            polygon = p_grid.polygons[polygon_index] #polygon is a list of lists, inner lists are long and lat'
+
             in_polygon = False
-            # ughhhh
+            # see if these points are in the poly
 
             if in_polygon:
                 occurences[polygon_index] += 1
@@ -75,6 +91,13 @@ def pnpoly(geojson, points):
 
     return occurences
 
-
 if __name__ == '__main__':
     pass
+"""
+
+
+polygon_grid = PolygonGrid("../data/polygons/districts/districts.geojson")
+
+
+
+
