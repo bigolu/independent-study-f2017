@@ -21,19 +21,14 @@ class PolygonGrid():
         return g
 
     def init_grid(self):
-        print(self.y)
-        print(self.x)
         #grid = [[]*self.y for i in range(self.x)] 
         grid = [[[] for x in range(self.x+1)] for y in range(self.y+1) ]
 
         for i, polygon in enumerate(self.polygons):
-            print("This thing: " + str(i))
             for point in polygon:
-                print("point" + str(point))
                 x, y = ((point[1]-self.minx) / self.xstep,
                         (point[0]-self.miny) / self.ystep)
                 x = int(x)
-                print(str(x) + " and " + str(y))
                 y = int(y)
                 grid[x][y].append(i)
         return grid
