@@ -1,8 +1,8 @@
 
 import json
 class PolygonGrid():
-    DEFAULT_X = 20
-    DEFAULT_Y = 20
+    DEFAULT_X = 50
+    DEFAULT_Y = 50
 
     #geoJson is just a dictionary
     #geoJson isn't the file, it's when it's loaded in already
@@ -94,10 +94,11 @@ if __name__ == '__main__':
     pass
 
 
+"""
 
 polygon_grid = PolygonGrid("../data/polygons/estonia_lithuania.geojson")
 
-"""
+
 print("steps: :::")
 print(polygon_grid.xstep)
 
