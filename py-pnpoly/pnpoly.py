@@ -7,9 +7,6 @@ class PolygonGrid():
     DEFAULT_X = 20
     DEFAULT_Y = 20
 
-    #geoJson is just a dictionary
-    #geoJson isn't the file, it's when it's loaded in already
-    #we need to initilize the grid before we 
     def __init__(self, geojson, x=DEFAULT_X, y=DEFAULT_Y):
         self.x = x or self.DEFAULT_X
         self.y = y or self.DEFAULT_Y
@@ -50,12 +47,14 @@ class PolygonGrid():
         return grid
                     
     def findCoordinatesInBox(self,i,j):
+        #given i,j of a 2D matrix, return appropriate latitude and longitude
         x = i*self.xstep
         latx = ((self.maxx - self.minx) - x) + self.minx;
         y = j*self.ystep + self.miny
         return latx,y
 
     def findRegion(self, x, y):
+        #given latitude and longitude, return regions associated with those coordinates
         point = Point(x,y)
         regionList = []
         for i in range(len(self.polygons)):
@@ -64,9 +63,8 @@ class PolygonGrid():
                 regionList.append(i)
         return regionList
                 
-    
-    def extract_polygons(self, geojson): #array of all the regions
-        return [polygon['geometry']['coordinates'][0] #list of all the coordinates
+    def extract_polygons(self, geojson): 
+        return [polygon['geometry']['coordinates'][0] 
                 for polygon
                 in geojson['features']] 
                 
@@ -79,7 +77,6 @@ class PolygonGrid():
                 maxy = max(maxy, y)
                 minx = min(minx, x)
                 miny = min(miny, y)
-
         return(minx, miny, maxx, maxy)
 
     def get_step(self):
@@ -93,11 +90,11 @@ class PolygonGrid():
     def get_candidate_polygons(self, x, y):
         gridx, gridy = self.point_to_grid_index(x, y)
         candidates = self.grid_regions[gridx][gridy]
-        return(candidates) #listOfIntegers
+        return(candidates) 
         #candidate polygons are indexes, grabbing from self.grid. 
         
 
-#this pnpoly is after preprocessing because it's using get candidate polygons
+
 def pnpoly(geojson, points):
     p_grid = PolygonGrid(geojson)
     occurences = [0 * len(p_grid.polygons)] 
