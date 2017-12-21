@@ -7,9 +7,11 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.basemap import Basemap
 import numpy as np
 from pathlib2 import Path
+from pnpoly import pnpoly
 
-BAR_WIDTH = .5
-BAR_HEIGHT = .5
+DELTA_X = .5
+DELTA_Y = .5
+DELTA_Y_SCALE_FACTOR = 10
 
 
 def get_map_boundaries(map_file):
@@ -30,6 +32,15 @@ def get_map_boundaries(map_file):
         urcrnrlat = max([coord_pair[1] for coord_pair in all_coords])
 
         return (llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat)
+
+
+def csv_rows(csv_file, indices, formatters):
+    with open(csv_file, 'rb') as f:
+        csv_reader = csv.reader(f, delimiter=',')
+        for row in csv_reader:
+            new_row = [row[index] for index in indices]
+            new_row = [formatters[i](new_row[i]) for i in range(new_row)]
+            yield new_row
 
 
 def render_map(map_shp_filename, map_geojson_filename, points_filename):
@@ -63,20 +74,53 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     # draw map
     ax.add_collection3d(shenzhen_region_boundaries)
 
-    lons = np.array([-13.7, -10.8, -13.2, -96.8, -7.99, 7.5, -17.3, -3.7])
-    lats = np.array([9.6, 6.3, 8.5, 32.7, 12.5, 8.9, 14.7, 40.39])
-    deaths = np.array([1192, 2964, 1250, 1, 5, 8, 0, 0])
-    places = np.array(['Guinea', 'Liberia', 'Sierra Leone','United States', 'Mali', 'Nigeria', 'Senegal', 'Spain'])
+    # load points TODO: this in the polygon file
+    points = csv_rows(points_filename, [1, 2], [float, float])
 
+    # load polygons
+    polygons = None
+    with open(map_geojson_filename, 'r') as f:
+        geojson = json.load(f)
+        polygons = [polygon['geometry']['coordinates'][0]
+                    for polygon
+                    in geojson['features']]
+
+    # create centroid list (where the bars will be placed in each polygon)
+    centroids = []
+    for polygon in polygons:
+        lon_avg = np.mean([point[0] for point in polygon])
+        lat_avg = np.mean([point[1] for point in polygon])
+        centroids.append([lon_avg, lat_avg])
+
+    # get occurences of points in polygons
+    occurences = pnpoly(polygons, points_filename)
+    # feature scale occurences
+    occurences_min = min(occurences)
+    occurences_max = max(occurences)
+    occurences_range = occurences_max - occurences_min
+    occurences = [float((occurence - occurences_min)) / float(occurences_range)
+                  for occurence in occurences]
+    # scale occurences to increase bar height
+    occurences = [DELTA_Y_SCALE_FACTOR * occurence
+                  for occurence in occurences]
+
+    # convert points for display on a cartesian map
+    lons = np.array([point[0] for point in centroids])
+    lats = np.array([point[1] for point in centroids])
     x, y = map(lons, lats)
+    # convert other map args to np.arrays
+    delta_z = np.array(occurences)
+    z = np.zeroes(len(x))
 
-    ax.bar3d(x, y, np.zeros(len(x)), 2, 2, deaths, color= 'r', alpha=0.8)
+    # populate map with bars
+    ax.bar3d(x, y, z, DELTA_X, DELTA_Y, delta_z, color='r', alpha=0.8)
 
+    # render map
     plt.show()
 
 
 if __name__ == '__main__':
-    assert len(sys.argv) == 4, ('Incorrect usage, use this format:\n'
+    assert len(sys.argv) == 4, ('usage: '
                                 'python <map.shp> <map.geojson> <points.csv>'
                                 )
 

@@ -3,8 +3,8 @@ class PolygonGrid():
     DEFAULT_Y = 50
 
     def __init__(self, geojson, x=DEFAULT_X, y=DEFAULT_Y):
-        self.x = x or self.DEFAULT_X
-        self.y = y or self.DEFAULT_Y
+        self.x = x
+        self.y = y
         self.polygons = self.extract_polygons(geojson)
         self.minx, self.miny, self.maxx, self.maxy = \
             self.get_minmax(self.polygons)
