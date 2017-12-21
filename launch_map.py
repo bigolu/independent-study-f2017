@@ -9,9 +9,11 @@ import numpy as np
 from pathlib2 import Path
 from pnpoly import pnpoly
 
-DELTA_X = .5
-DELTA_Y = .5
-DELTA_Y_SCALE_FACTOR = 10
+DELTA_X = .0030
+DELTA_Y = .0030
+RED = '#ff0000'
+YELLOW = '#ffff00'
+ORANGE = '#FFA500'
 
 
 def get_map_boundaries(map_file):
@@ -32,15 +34,6 @@ def get_map_boundaries(map_file):
         urcrnrlat = max([coord_pair[1] for coord_pair in all_coords])
 
         return (llcrnrlon, llcrnrlat, urcrnrlon, urcrnrlat)
-
-
-def csv_rows(csv_file, indices, formatters):
-    with open(csv_file, 'rb') as f:
-        csv_reader = csv.reader(f, delimiter=',')
-        for row in csv_reader:
-            new_row = [row[index] for index in indices]
-            new_row = [formatters[i](new_row[i]) for i in range(new_row)]
-            yield new_row
 
 
 def render_map(map_shp_filename, map_geojson_filename, points_filename):
@@ -74,16 +67,15 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     # draw map
     ax.add_collection3d(shenzhen_region_boundaries)
 
-    # load points TODO: this in the polygon file
-    points = csv_rows(points_filename, [1, 2], [float, float])
-
     # load polygons
-    polygons = None
+    polygons = []
     with open(map_geojson_filename, 'r') as f:
         geojson = json.load(f)
-        polygons = [polygon['geometry']['coordinates'][0]
-                    for polygon
-                    in geojson['features']]
+        tmp = [polygon['geometry']['coordinates'][0]
+               for polygon
+               in geojson['features']]
+        for polygon in tmp:
+            polygons.append([tuple(point) for point in polygon])
 
     # create centroid list (where the bars will be placed in each polygon)
     centroids = []
@@ -100,9 +92,11 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     occurences_range = occurences_max - occurences_min
     occurences = [float((occurence - occurences_min)) / float(occurences_range)
                   for occurence in occurences]
-    # scale occurences to increase bar height
-    occurences = [DELTA_Y_SCALE_FACTOR * occurence
-                  for occurence in occurences]
+
+    # list of colors for each bars
+    colors = [RED if occurence > .66
+              else (ORANGE if occurence > .33 else YELLOW)
+              for occurence in occurences]
 
     # convert points for display on a cartesian map
     lons = np.array([point[0] for point in centroids])
@@ -110,10 +104,12 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     x, y = map(lons, lats)
     # convert other map args to np.arrays
     delta_z = np.array(occurences)
-    z = np.zeroes(len(x))
+    z = np.zeros(len(x))
+
+    print DELTA_X, DELTA_Y, delta_z
 
     # populate map with bars
-    ax.bar3d(x, y, z, DELTA_X, DELTA_Y, delta_z, color='r', alpha=0.8)
+    ax.bar3d(x, y, z, DELTA_X, DELTA_Y, delta_z, color=colors, alpha=0.8)
 
     # render map
     plt.show()
