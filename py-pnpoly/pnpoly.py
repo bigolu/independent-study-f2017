@@ -1,23 +1,25 @@
-
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from shapely.geometry import MultiPoint
 import json
+
+
 class PolygonGrid():
+
     DEFAULT_X = 20
     DEFAULT_Y = 20
 
     def __init__(self, geojson, x=DEFAULT_X, y=DEFAULT_Y):
         self.x = x or self.DEFAULT_X
         self.y = y or self.DEFAULT_Y
-        gj = self.makeGeojson(geojson)
+        gj = self.make_geojson(geojson)
         self.polygons = self.extract_polygons(gj)
         self.minx, self.miny, self.maxx, self.maxy = \
             self.get_minmax(self.polygons)
         self.xstep, self.ystep = self.get_step()
         self.grid = self.init_grid()
 
-    def makeGeojson(self, geojson):
+    def make_geojson(self, geojson):
         g = json.load(open(geojson))
         return g
 
@@ -36,32 +38,32 @@ class PolygonGrid():
         return populated_grid
 
     def populate_grid(self, grid):
-        #populating grid to see which regions are associated with empty boxes in 2D grid
+        #Goes through initialized grid to populate the empty boxes with correct region
         for i in range(len(grid)):
             for j in range(len(grid[i])):
                 if (len(grid[i][j])) == 0:
-                    x, y = self.findCoordinatesInBox(i,j)
-                    regionList = self.findRegion(x,y)
-                    for k in range(len(regionList)):
-                        grid[i][j].append(regionList[k])
+                    x, y = self.find_coordinates_in_box(i,j)
+                    region_list = self.find_regions(x,y)
+                    for k in range(len(region_list)):
+                        grid[i][j].append(region_list[k])
         return grid
                     
-    def findCoordinatesInBox(self,i,j):
-        #given i,j of a 2D matrix, return appropriate latitude and longitude
+    def find_coordinates_in_box(self,i,j):
+        #Given i,j of a 2D matrix, return appropriate latitude and longitude
         x = i*self.xstep
-        latx = ((self.maxx - self.minx) - x) + self.minx;
-        y = j*self.ystep + self.miny
-        return latx,y
+        latit = ((self.maxx - self.minx) - x) + self.minx;
+        longit = j*self.ystep + self.miny
+        return latit,longit
 
-    def findRegion(self, x, y):
-        #given latitude and longitude, return regions associated with those coordinates
+    def find_regions(self, x, y):
+        #Given latitude and longitude, return regions associated with those coordinates
         point = Point(x,y)
-        regionList = []
+        region_list = []
         for i in range(len(self.polygons)):
             polygon = MultiPoint(self.polygons[i]).convex_hull
             if((polygon.contains(point)) or (polygon.intersects(point))):
-                regionList.append(i)
-        return regionList
+                region_list.append(i)
+        return region_list
                 
     def extract_polygons(self, geojson): 
         return [polygon['geometry']['coordinates'][0] 
@@ -83,36 +85,32 @@ class PolygonGrid():
         return ((self.maxx - self.minx) / float(self.x),
                 (self.maxy-self.miny) / float(self.y))
 
-    def point_to_grid_index(self, x, y):
-        return ((x - self.minx) / self.xstep,
-                (y - self.miny) / self.ystep)
+    def point_to_grid_index(self, latit, longit):
+        #Latitude system is ascending as it goes up, whilst 2D matrix ascends going down.
+        latitude_to_i_val = (self.maxx - self.minx) - (latit-self.minx) 
+        return (latitude_to_i_val / self.xstep,
+                (longit - self.miny) / self.ystep)
 
     def get_candidate_polygons(self, x, y):
         gridx, gridy = self.point_to_grid_index(x, y)
-        candidates = self.grid_regions[gridx][gridy]
+        gridx = int(gridx)
+        gridy = int(gridy)
+        candidates = self.grid[gridx][gridy]
         return(candidates) 
-        #candidate polygons are indexes, grabbing from self.grid. 
         
-
 
 def pnpoly(geojson, points):
     p_grid = PolygonGrid(geojson)
     occurences = [0 * len(p_grid.polygons)] 
     for point in points:
         latit, longit = point[0], point[1]
-        candidate_polygons = p_grid.get_candidate_polygons(latit, longit)
+        candidate_polygons = p_grid.get_candidate_polygons(latit,longit)
         if len(candidate_polygons) == 0:
-            return 
+            continue
         for polygon_index in candidate_polygons:
-            polygon = p_grid.polygons[polygon_index] 
-            in_polygon = False
-            # see if these points are in the poly
-
-            if in_polygon:
-                occurences[polygon_index] += 1
-                break
-
-    return occurences
+            polygon = MultiPoint(p_grid.polygons[polygon_index]).convex_hull
+            if polygon.contains(point):
+                print "true"
 
 if __name__ == '__main__':
     pass
@@ -121,7 +119,8 @@ if __name__ == '__main__':
 
 
 polygon_grid = PolygonGrid("../data/polygons/estonia_lithuania.geojson")
-
+points = [[19,10]]
+pnpoly("../data/polygons/estonia_lithuania.geojson", points)
 
 for i, polygon in enumerate(polygon_grid.grid):
     print(i, polygon)
