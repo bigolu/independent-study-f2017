@@ -4,8 +4,8 @@ from shapely.geometry.polygon import Polygon
 from shapely.geometry import MultiPoint
 import json
 class PolygonGrid():
-    DEFAULT_X = 10
-    DEFAULT_Y = 10
+    DEFAULT_X = 20
+    DEFAULT_Y = 20
 
     #geoJson is just a dictionary
     #geoJson isn't the file, it's when it's loaded in already
@@ -23,7 +23,6 @@ class PolygonGrid():
     def makeGeojson(self, geojson):
         g = json.load(open(geojson))
         return g
-
 
     def init_grid(self):
         grid = [[[] for x in range(self.x+1)] for y in range(self.y+1) ]
@@ -91,7 +90,7 @@ class PolygonGrid():
         return ((x - self.minx) / self.xstep,
                 (y - self.miny) / self.ystep)
 
-    def get_canidate_polygons(self, x, y):
+    def get_candidate_polygons(self, x, y):
         gridx, gridy = self.point_to_grid_index(x, y)
         candidates = self.grid_regions[gridx][gridy]
         return(candidates) #listOfIntegers
@@ -102,15 +101,13 @@ class PolygonGrid():
 def pnpoly(geojson, points):
     p_grid = PolygonGrid(geojson)
     occurences = [0 * len(p_grid.polygons)] 
-
     for point in points:
-        x, y = point[1], point[0]
-        canidate_polygons = p_grid.get_canidate_polygons(x, y)
-        #run pn poly on that set of coordinates and the polygons
-        for polygon_index in canidate_polygons:
-
-            polygon = p_grid.polygons[polygon_index] #polygon is a list of lists, inner lists are long and lat'
-
+        latit, longit = point[0], point[1]
+        candidate_polygons = p_grid.get_candidate_polygons(latit, longit)
+        if len(candidate_polygons) == 0:
+            return 
+        for polygon_index in candidate_polygons:
+            polygon = p_grid.polygons[polygon_index] 
             in_polygon = False
             # see if these points are in the poly
 
