@@ -1,0 +1,15 @@
+backports.functools-lru-cache==1.4
+basemap==1.1.0
+cycler==0.10.0
+matplotlib==2.1.1
+numpy==1.13.3
+pathlib2==2.3.0
+pyparsing==2.2.0
+pyproj==1.9.5.1
+pyshp==1.2.12
+python-dateutil==2.6.1
+pytz==2017.3
+scandir==1.6
+Shapely==1.6.3
+six==1.11.0
+subprocess32==3.2.7

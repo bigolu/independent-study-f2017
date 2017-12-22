@@ -9,14 +9,17 @@ import numpy as np
 from pathlib2 import Path
 from pnpoly import pnpoly
 
+# width and height, respectively, of bars
 DELTA_X = .0030
 DELTA_Y = .0030
+
+# colors used for bars
 RED = '#ff0000'
 YELLOW = '#ffff00'
 ORANGE = '#FFA500'
 
 
-def get_map_boundaries(map_file):
+def get_map_minmax(map_file):
     with map_file.open() as f:
         geojson = json.load(f)
         polygon_coords = [polygon['geometry']['coordinates'][0]
@@ -54,18 +57,18 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     ax.set_title('3D Bar Plot')
 
     # define map boundaries
-    map_boundaries = get_map_boundaries(map_geojson)
-    map = Basemap(llcrnrlon=map_boundaries[0], llcrnrlat=map_boundaries[1],
-                  urcrnrlon=map_boundaries[2], urcrnrlat=map_boundaries[3],)
+    map_minmax = get_map_minmax(map_geojson)
+    map = Basemap(llcrnrlon=map_minmax[0], llcrnrlat=map_minmax[1],
+                  urcrnrlon=map_minmax[2], urcrnrlat=map_minmax[3],)
 
     # get map data
     # remove filename extension
     map_shp_filename = map_shp_filename.replace('.shp', '')
     map_data = map.readshapefile(map_shp_filename, 'map')
-    shenzhen_region_boundaries = map_data[4]
+    map_boundaries = map_data[4]
 
     # draw map
-    ax.add_collection3d(shenzhen_region_boundaries)
+    ax.add_collection3d(map_boundaries)
 
     # load polygons
     polygons = []
@@ -93,7 +96,7 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     occurences = [float((occurence - occurences_min)) / float(occurences_range)
                   for occurence in occurences]
 
-    # list of colors for each bars
+    # list of colors for each bar
     colors = [RED if occurence > .66
               else (ORANGE if occurence > .33 else YELLOW)
               for occurence in occurences]
@@ -105,8 +108,6 @@ def render_map(map_shp_filename, map_geojson_filename, points_filename):
     # convert other map args to np.arrays
     delta_z = np.array(occurences)
     z = np.zeros(len(x))
-
-    print DELTA_X, DELTA_Y, delta_z
 
     # populate map with bars
     ax.bar3d(x, y, z, DELTA_X, DELTA_Y, delta_z, color=colors, alpha=0.8)

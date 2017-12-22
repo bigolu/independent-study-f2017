@@ -12,7 +12,8 @@ class PolygonGrid():
     def __init__(self, polygons, x=DEFAULT_X, y=DEFAULT_Y):
         self.x = x
         self.y = y
-        self.polygons = [MultiPoint(polygon).convex_hull for polygon in polygons]
+        self.polygons = [MultiPoint(polygon).convex_hull
+                         for polygon in polygons]
         self.minx, self.miny, self.maxx, self.maxy = self.get_minmax()
         self.xstep, self.ystep = self.get_step()
         self.grid = self.init_grid()
