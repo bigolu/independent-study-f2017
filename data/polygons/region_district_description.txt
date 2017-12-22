@@ -1,2 +1,0 @@
-the polygon is in "out_edge".
-each polygon is defined by "geo_array" and assigned with a "geo_id"
