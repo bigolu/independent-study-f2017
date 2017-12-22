@@ -8,6 +8,7 @@ cellphone tower usage in Shenzhen, China by region
 </p>
 
 ## Setup
+* from the root directory, create a virtualenv with `virtualenv -p python2 venv` (must be named venv)
 * from the root directory, run `./setup.sh` ( may require sudo)
 * this starts the virtualenv, installs the dependencies and other libraries that [basemap](https://matplotlib.org/basemap/users/installing.html) depends on
 
